@@ -24,12 +24,34 @@
 
 ---
 
-## Conclusion
+# 🔐 Security Comparison: AnubisScale vs Binwalk
 
-| Tool       | Security Posture    | Recommended Usage                   |
-|------------|--------------------|-----------------------------------|
-| `binwalk`  | Medium to High Risk | In isolated/sandboxed environments only |
-| `AnubisScale` | Low Risk          | Safe for local, direct file scanning |
+## Full Security Comparison Table
+
+| Category                           | AnubisScale (Swift)                                                                | binwalk (CLI Tool)                                                                                    |
+| ---------------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| **Remote Code Execution (RCE)**    | ❌ Not possible (does not execute external code or system calls)                    | ✅ Possible via crafted headers triggering vulnerable decompression tools (e.g., `unsquashfs`, `lzma`) |
+| **Command Injection**              | ❌ No shell interaction at all                                                      | ✅ Possible if user input is not sanitized and passed to a shell command                               |
+| **File Path Traversal**            | ❌ No filesystem writes except to logs (user-specified output path)                 | ✅ Extracted files may include `../../../` to escape target directory                                  |
+| **Malicious Archive Extraction**   | ❌ Does not extract archives                                                        | ✅ Auto-extraction may trigger bugs in tar/xz/lzma/squashfs parsers                                    |
+| **Privilege Escalation**           | ❌ Not applicable                                                                   | ⚠️ If run with elevated privileges (e.g., `sudo`), extracted files can overwrite system files         |
+| **Denial of Service (DoS)**        | ⚠️ Possible with huge or malformed files (RAM/CPU overload)                        | ✅ Common with crafted input designed to slow decompression or trigger crash                           |
+| **Out-of-Bounds Memory Access**    | ❌ Swift safely handles memory access                                               | ✅ Possible in C-based decompression tools (if they aren’t patched)                                    |
+| **Malicious Plugin Execution**     | ❌ No plugin system                                                                 | ✅ Plugins written in Python can be executed automatically                                             |
+| **Logging Sensitive Data**         | ⚠️ If used improperly (e.g., logging paths or file content to world-readable file) | ⚠️ binwalk output can reveal extracted content including secrets (keys, config, etc.)                 |
+| **Tampered Binary Detection**      | ✅ AnubisScale flags based on entropy deviations                                    | ❌ binwalk does not flag anomalies, only extracts/examines structure                                   |
+| **Sandboxing or Isolation**        | 🟡 Optional (Swift code runs natively)                                             | ❌ Not isolated by default – extra tools run in host environment                                       |
+| **Dependency Chain Vulnerability** | ✅ None (single-process tool)                                                       | ✅ Depends on external tools like `tar`, `xz`, `gzip`, `dd`, `lzma`, which may have their own CVEs     |
+
+---
+
+## 🛡️ Summary
+
+| Tool            | Overall Security Risk    | Recommended Use Case                                          |
+| --------------- | ------------------------ | ------------------------------------------------------------- |
+| **AnubisScale** | 🔐 Low Risk              | Safe for automated static entropy analysis                    |
+| **binwalk**     | ⚠️ Moderate to High Risk | Must be sandboxed or containerized for any automated workflow |
+
 
 ---
 
